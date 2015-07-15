@@ -209,6 +209,29 @@ describe Agents::DataOutputAgent do
         })
       end
 
+      describe 'ordering' do
+        before do
+          agent.options['order_by'] = '{{title}}'
+        end
+
+        it 'can reorder the events_to_show last events based on a Liquid expression' do
+          content, status, content_type = agent.receive_web_request({ 'secret' => 'secret2' }, 'get', 'application/json')
+          expect(content['items'].map {|i| i["title"] }).to eq(["Evolving", "Evolving again", "Evolving yet again with a past date"])
+        end
+
+        it 'uses the asc order direction by default' do
+          first_content, status, content_type = agent.receive_web_request({ 'secret' => 'secret2' }, 'get', 'application/json')
+
+          agent.options['order_direction'] = 'asc'
+          asc_content, status, content_type = agent.receive_web_request({ 'secret' => 'secret2' }, 'get', 'application/json')
+          expect(asc_content['items']).to eq(first_content['items']) # the default ordering direction is asc
+
+          agent.options['order_direction'] = 'desc'
+          desc_content, status, content_type = agent.receive_web_request({ 'secret' => 'secret2' }, 'get', 'application/json')
+          expect(desc_content['items']).to eq(asc_content['items'].reverse)
+        end
+      end
+
       describe "interpolating \"events\"" do
         before do
           agent.options['template']['title'] = "XKCD comics as a feed{% if events.first.site_title %} ({{events.first.site_title}}){% endif %}"

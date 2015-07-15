@@ -22,6 +22,8 @@ module Agents
           * `template` - A JSON object representing a mapping between item output keys and incoming event values.  Use [Liquid](https://github.com/cantino/huginn/wiki/Formatting-Events-using-Liquid) to format the values.  Values of the `link`, `title`, `description` and `icon` keys will be put into the \\<channel\\> section of RSS output.  The `item` key will be repeated for every Event.  The `pubDate` key for each item will have the creation time of the Event unless given.
           * `events_to_show` - The number of events to output in RSS or JSON. (default: `40`)
           * `ttl` - A value for the \\<ttl\\> element in RSS output. (default: `60`)
+          * `order_by` - A Liquid expression to reorder the last `events_to_show` events by, for example `{{title}}`.  Default behavior is no reordering.
+          * `order_direction` - The direction to reorder by if `order_by` is provided.  Either `asc` (default) or `desc`.
 
         If you'd like to output RSS tags with attributes, such as `enclosure`, use something like the following in your `template`:
 
@@ -44,7 +46,7 @@ module Agents
 
         In Liquid templating, the following variable is available:
 
-        * `events`: An array of events being output, sorted in descending order up to `events_to_show` in number.  For example, if source events contain a site title in the `site_title` key, you can refer to it in `template.title` by putting `{{events.first.site_title}}`.
+        * `events`: An array of events being output, sorted in the given order, up to `events_to_show` in number.  For example, if source events contain a site title in the `site_title` key, you can refer to it in `template.title` by putting `{{events.first.site_title}}`.
 
       MD
     end
@@ -137,6 +139,8 @@ module Agents
       source_events = received_events.order(id: :desc).limit(events_to_show).to_a
 
       interpolation_context.stack do
+        sort_events! source_events
+        
         interpolation_context['events'] = source_events
 
         items = source_events.map do |event|
@@ -255,6 +259,15 @@ module Agents
         item.map { |value| simplify_item_for_json(value) }
       else
         item
+      end
+    end
+
+    def sort_events!(source_events)
+      return unless options['order_by'].present?
+
+      source_events.sort! do |event_a, event_b|
+        event_a, event_b = event_b, event_a if interpolated['order_direction'] == 'desc'
+        interpolate_options(options['order_by'], event_a) <=> interpolate_options(options['order_by'], event_b)
       end
     end
   end

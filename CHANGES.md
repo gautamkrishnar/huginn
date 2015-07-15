@@ -1,5 +1,6 @@
 # Changes
 
+* July 15, 2015  - DataOutputAgent can accept optional `order_by` and `order_direction` options.
 * Jul 1, 2015    - DeDuplicationAgent properly handles destruction of memory.
 * Jun 26, 2015   - Add `max_events_per_run` to RssAgent.
 * Jun 19, 2015   - Add `url_from_event` to WebsiteAgent.
